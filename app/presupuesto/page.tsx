@@ -33,11 +33,27 @@ export default function Presupuesto() {
   const [images, setImages] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [showSavedQuotes, setShowSavedQuotes] = useState(false)
+  const [savedQuotes, setSavedQuotes] = useState<any[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema)
   })
+
+  // Función para cargar presupuestos guardados
+  const loadSavedQuotes = () => {
+    const quotes = JSON.parse(localStorage.getItem('tapiceria_quotes') || '[]')
+    setSavedQuotes(quotes)
+    setShowSavedQuotes(true)
+  }
+
+  // Función para limpiar presupuestos guardados
+  const clearSavedQuotes = () => {
+    localStorage.removeItem('tapiceria_quotes')
+    setSavedQuotes([])
+    console.log('Presupuestos eliminados del localStorage')
+  }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -78,32 +94,39 @@ export default function Presupuesto() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
     try {
-      if (!supabase) throw new Error('Supabase no disponible en el servidor')
-      let imageUrls: string[] = []
-      
-      if (images.length > 0) {
-        imageUrls = await uploadImages(images)
+      // LOCAL STORAGE MODE: Guardar datos localmente para demostración
+      const quote = {
+        id: Date.now().toString(),
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        category: data.category,
+        description: data.description,
+        images: images.length > 0 ? `${images.length} imagen(es) adjunta(s)` : 'Sin imágenes',
+        created_at: new Date().toISOString()
       }
-
-      const { error } = await supabase
-        .from('quotes')
-        .insert({
-          name: data.name,
-          phone: data.phone,
-          email: data.email,
-          product_category: data.category,
-          description: data.description,
-          image_urls: imageUrls,
-          status: 'pending'
-        })
-
-      if (error) throw error
+      
+      // Obtener presupuestos existentes del localStorage
+      const existingQuotes = JSON.parse(localStorage.getItem('tapiceria_quotes') || '[]')
+      
+      // Agregar nuevo presupuesto
+      existingQuotes.push(quote)
+      
+      // Guardar en localStorage
+      localStorage.setItem('tapiceria_quotes', JSON.stringify(existingQuotes))
+      
+      // Log para demostración
+      console.log('📋 PRESUPUESTO GUARDADO LOCALMENTE:', quote)
+      console.log('📊 Total presupuestos guardados:', existingQuotes.length)
+      
+      // Simular delay de red
+      await new Promise(resolve => setTimeout(resolve, 1500))
 
       setIsSuccess(true)
       reset()
       setImages([])
     } catch (error) {
-      console.error('Error submitting quote:', error)
+      console.error('Error guardando presupuesto:', error)
       // Handle error (show error message to user)
     } finally {
       setIsSubmitting(false)
@@ -114,6 +137,40 @@ export default function Presupuesto() {
     return (
       <>
         <Navbar />
+        
+        {/* Banner de Modo Demo - Local Storage */}
+         <div className="bg-green-50 border-l-4 border-green-400 p-4">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+             <div className="flex items-center justify-between">
+               <div className="flex items-center">
+                 <div className="flex-shrink-0">
+                   <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                   </svg>
+                 </div>
+                 <div className="ml-3">
+                   <p className="text-sm text-green-700">
+                     <strong>Modo Demostración - Almacenamiento Local:</strong> Los datos se guardan en el navegador para demostración.
+                   </p>
+                 </div>
+               </div>
+               <div className="flex gap-2">
+                 <button
+                   onClick={loadSavedQuotes}
+                   className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                 >
+                   Ver Presupuestos ({JSON.parse(localStorage.getItem('tapiceria_quotes') || '[]').length})
+                 </button>
+                 <button
+                   onClick={clearSavedQuotes}
+                   className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                 >
+                   Limpiar
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
         <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#c3a8ec]/10 to-[#c6aaf0]/20">
           <motion.div
             className="max-w-md mx-auto text-center p-8"
@@ -380,6 +437,57 @@ export default function Presupuesto() {
       </section>
 
       <Footer />
+
+      {/* Modal para mostrar presupuestos guardados */}
+      {showSavedQuotes && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Presupuestos Guardados ({savedQuotes.length})</h3>
+                <button
+                  onClick={() => setShowSavedQuotes(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {savedQuotes.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No hay presupuestos guardados</p>
+              ) : (
+                <div className="space-y-4">
+                  {savedQuotes.map((quote, index) => (
+                    <div key={quote.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-lg">{quote.name}</h4>
+                        <span className="text-sm text-gray-500">
+                          {new Date(quote.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p><strong>Teléfono:</strong> {quote.phone}</p>
+                          <p><strong>Email:</strong> {quote.email}</p>
+                        </div>
+                        <div>
+                          <p><strong>Categoría:</strong> {quote.category}</p>
+                          <p><strong>Imágenes:</strong> {quote.images}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <p><strong>Descripción:</strong></p>
+                        <p className="text-gray-700 mt-1">{quote.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

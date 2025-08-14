@@ -1,121 +1,115 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
-let cachedClient: SupabaseClient | null = null
+// DEMO MODE: Supabase functionality temporarily disabled for client presentation
+// This file contains mock functions for demonstration purposes
 
-export function getSupabaseClient(): SupabaseClient {
-  if (cachedClient) return cachedClient
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://demo.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'demo-key'
 
-  if (typeof window === 'undefined') {
-    throw new Error('Supabase client solo está disponible en el navegador')
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Faltan variables de entorno NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  }
-
-  cachedClient = createClient(supabaseUrl, supabaseAnonKey)
-  return cachedClient
+// Mock Supabase client for demo
+export const getSupabaseClient = () => {
+  console.log('🔧 DEMO MODE: Using mock Supabase client')
+  return null // Return null to indicate demo mode
 }
 
-export type Database = {
+// Database types for when Supabase is enabled
+export interface Database {
   public: {
     Tables: {
       products: {
         Row: {
-          id: number
+          id: string
           name: string
-          description: string | null
-          price: number
+          description: string
           category: string
+          price: number
           image_url: string
           created_at: string
-          featured: boolean
         }
         Insert: {
-          id?: number
+          id?: string
           name: string
-          description?: string | null
-          price: number
+          description: string
           category: string
+          price: number
           image_url: string
           created_at?: string
-          featured?: boolean
         }
         Update: {
-          id?: number
+          id?: string
           name?: string
-          description?: string | null
-          price?: number
+          description?: string
           category?: string
+          price?: number
           image_url?: string
           created_at?: string
-          featured?: boolean
         }
       }
       quotes: {
         Row: {
-          id: number
+          id: string
           name: string
           phone: string
           email: string
-          product_category: string | null
+          category: string
           description: string
-          image_urls: string[] | null
+          images: string[]
+          status: 'pending' | 'in_progress' | 'completed'
           created_at: string
-          status: string
         }
         Insert: {
-          id?: number
+          id?: string
           name: string
           phone: string
           email: string
-          product_category?: string | null
+          category: string
           description: string
-          image_urls?: string[] | null
+          images?: string[]
+          status?: 'pending' | 'in_progress' | 'completed'
           created_at?: string
-          status?: string
         }
         Update: {
-          id?: number
+          id?: string
           name?: string
           phone?: string
           email?: string
-          product_category?: string | null
+          category?: string
           description?: string
-          image_urls?: string[] | null
+          images?: string[]
+          status?: 'pending' | 'in_progress' | 'completed'
           created_at?: string
-          status?: string
         }
       }
       testimonials: {
         Row: {
-          id: number
+          id: string
           name: string
-          testimonial: string
+          content: string
           rating: number
-          image_url: string | null
+          image_url?: string
           created_at: string
         }
         Insert: {
-          id?: number
+          id?: string
           name: string
-          testimonial: string
+          content: string
           rating: number
-          image_url?: string | null
+          image_url?: string
           created_at?: string
         }
         Update: {
-          id?: number
+          id?: string
           name?: string
-          testimonial?: string
+          content?: string
           rating?: number
-          image_url?: string | null
+          image_url?: string
           created_at?: string
         }
       }
     }
   }
 }
+
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type Inserts<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type Updates<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
